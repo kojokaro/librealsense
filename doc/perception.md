@@ -52,7 +52,7 @@ The camera builds the depth mapping streams from its depth. The depth mapping in
 
 | Stream | `rs2_stream` | Description |
 | --- | --- | --- |
-| Occupancy grid | `RS2_STREAM_OCCUPANCY` | A 2D top-down grid around the camera, for robot navigation. Each cell is one signed byte: -1 = unknown, 0 = free, 1 - 100 = occupancy probability. The values follow the ROS `nav_msgs/msg/OccupancyGrid` convention. |
+| Occupancy grid | `RS2_STREAM_OCCUPANCY` | 2D occupancy grid (-1 = unknown, 0 = free, 1 - 100 = occupancy probability) used for robot navigation, fully compatible with the Nav2 OccupancyGrid (`nav_msgs/msg/OccupancyGrid`). |
 | Labeled point cloud | `RS2_STREAM_LABELED_POINT_CLOUD` | XYZ points, each with a label. See [Point labels](#point-labels). |
 | Point cloud | `RS2_STREAM_POINT_CLOUD` | XYZ points (`RS2_FORMAT_XYZ32F`), at 640x480@30 or 1280x720@15. |
 
@@ -67,8 +67,6 @@ Each point in the labeled point cloud has one `rs2_point_cloud_label`. D5x5 came
 | `RS2_POINT_CLOUD_LABEL_CLIFF` | Below the floor |
 | `RS2_POINT_CLOUD_LABEL_OVERHEAD` | Above the robot height |
 | `RS2_POINT_CLOUD_LABEL_OBSTACLE` | A potential obstacle |
-| `RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER` | An obstacle inside the danger zone |
-| `RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING` | An obstacle inside the warning zone |
 | `RS2_POINT_CLOUD_LABEL_MASKED` | A potential obstacle inside a masked region |
 
 The other values of `rs2_point_cloud_label` are not used by D5x5 cameras.
@@ -83,8 +81,8 @@ The other values of `rs2_point_cloud_label` are not used by D5x5 cameras.
 
 | Option | Values | Description |
 | --- | --- | --- |
-| `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` | 0 = off, 1 = on | On: the camera runs an RGB-D segmentation neural network to refine floor detection, for a more accurate occupancy grid. Off: floor detection uses depth only. |
-| `RS2_OPTION_LPCL_SEGMENTATION` | 0 = off, 1 = on | On: the camera runs an RGB-D segmentation neural network to refine the floor labels of the labeled point cloud. Off: labels use depth only. |
+| `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` | 0 = off, 1 = on | When segmentation is enabled, the occupancy grid flow activates an RGB-D segmentation NN, refining the quality of the floor detection pixels and resulting in a more accurate occupancy grid. |
+| `RS2_OPTION_LPCL_SEGMENTATION` | 0 = off, 1 = on | When segmentation is enabled, the labeled point cloud flow activates an RGB-D segmentation NN, refining the quality of the floor detection labeling. |
 
 These options cannot be changed while streaming. FW publishes them over USB only, not over GMSL.
 
@@ -159,17 +157,17 @@ The JSON has three groups. All keys are optional except `camera_position`, which
 
 | Key | Type | Units | Range | Description |
 | --- | --- | --- | --- | --- |
-| `rotation` | float, 3x3 | - | any finite value | Rotation from the camera frame to the robot frame |
-| `translation` | float, [3] | m | any finite value | Camera position in the robot frame. The Z value is the mounting height and is used to calculate the cell threshold. |
+| `rotation` | float, 3x3 | - | any finite value | Camera to robot rigid-body transformation: rotation, row-major |
+| `translation` | float, [3] | m | any finite value | Camera to robot rigid-body transformation: translation vector [x, y, z]. The Z value is the mounting height and is used to calculate the cell threshold. |
 
 **`occupancy_grid_params`**
 
 | Key | Type | Units | Default | Range | Description |
 | --- | --- | --- | --- | --- | --- |
-| `grid_cell_size` | integer | mm | 50 | 50 - 500, multiple of 10 | Size of one occupancy grid cell |
-| `cell_threshold_factor` | float | - | 0.02 | any finite value | Used to calculate the cell threshold |
-| `polynomial_bias` | float | - | 4.0 | any finite value | Used to calculate the cell threshold |
-| `surface_height` | float | m | 0.1 | 0.05 - 1.0 | Height of the floor band. Splits ground from cliffs and obstacles. |
+| `grid_cell_size` | integer | mm | 50 | 50 - 500, multiple of 10 | Edge size of one (square) grid cell |
+| `cell_threshold_factor` | float | - | 0.02 | any finite value | Cell threshold calculation factor |
+| `polynomial_bias` | float | - | 4.0 | any finite value | Cell threshold calculation bias |
+| `surface_height` | float | m | 0.1 | 0.05 - 1.0 | Minimum height above the floor used for obstacle avoidance |
 
 **`depth_mapping_params`**
 
