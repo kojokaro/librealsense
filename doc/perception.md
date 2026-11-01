@@ -6,6 +6,8 @@ D5x5 cameras (D585, D535) process depth on the camera itself and stream percepti
 * [Sensors](#sensors)
 * [Depth Mapping](#depth-mapping)
   * [Streams](#streams)
+    * [Point labels](#point-labels)
+    * [Stream rules](#stream-rules)
   * [Options](#options)
   * [Depth mapping params](#depth-mapping-params)
     * [API](#api)
@@ -50,16 +52,39 @@ The camera builds the depth mapping streams from its depth. The depth mapping in
 
 | Stream | `rs2_stream` | Description |
 | --- | --- | --- |
-| Occupancy grid | `RS2_STREAM_OCCUPANCY` | A top-down grid around the camera. Each cell is labeled with what was seen in it, such as ground, obstacle or cliff. |
-| Labeled point cloud | `RS2_STREAM_LABELED_POINT_CLOUD` | Points, each with a label. |
+| Occupancy grid | `RS2_STREAM_OCCUPANCY` | A 2D top-down grid around the camera, for robot navigation. Each cell is one signed byte: -1 = unknown, 0 = free, 1 - 100 = occupancy probability. The values follow the ROS `nav_msgs/msg/OccupancyGrid` convention. |
+| Labeled point cloud | `RS2_STREAM_LABELED_POINT_CLOUD` | XYZ points, each with a label. See [Point labels](#point-labels). |
 | Point cloud | `RS2_STREAM_POINT_CLOUD` | XYZ points (`RS2_FORMAT_XYZ32F`), at 640x480@30 or 1280x720@15. |
+
+#### Point labels
+
+Each point in the labeled point cloud has one `rs2_point_cloud_label`. D5x5 cameras emit these labels:
+
+| Label | Description |
+| --- | --- |
+| `RS2_POINT_CLOUD_LABEL_INVALID` | Discarded: no valid depth, too close, or outside the classified region |
+| `RS2_POINT_CLOUD_LABEL_GROUND` | Part of the floor |
+| `RS2_POINT_CLOUD_LABEL_CLIFF` | Below the floor |
+| `RS2_POINT_CLOUD_LABEL_OVERHEAD` | Above the robot height |
+| `RS2_POINT_CLOUD_LABEL_OBSTACLE` | A potential obstacle |
+| `RS2_POINT_CLOUD_LABEL_OBSTACLE_DANGER` | An obstacle inside the danger zone |
+| `RS2_POINT_CLOUD_LABEL_OBSTACLE_WARNING` | An obstacle inside the warning zone |
+| `RS2_POINT_CLOUD_LABEL_MASKED` | A potential obstacle inside a masked region |
+
+The other values of `rs2_point_cloud_label` are not used by D5x5 cameras.
+
+#### Stream rules
+
+* If the depth sensor is already streaming, the occupancy grid can start only if depth streams at 640x360 or 1280x720, at the occupancy grid's frame rate.
+* While the occupancy grid streams, depth can start only alone, at 640x360 and the occupancy grid's frame rate.
+* Over USB, the occupancy grid and color cannot stream at the same time.
 
 ### Options
 
 | Option | Values | Description |
 | --- | --- | --- |
-| `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` | 0 = off, 1 = on | Off: occupancy grid labels come from depth only. On: segmentation labels are used. |
-| `RS2_OPTION_LPCL_SEGMENTATION` | 0 = off, 1 = on | The same, for the labeled point cloud. |
+| `RS2_OPTION_OCCUPANCY_GRID_SEGMENTATION` | 0 = off, 1 = on | On: the camera runs an RGB-D segmentation neural network to refine floor detection, for a more accurate occupancy grid. Off: floor detection uses depth only. |
+| `RS2_OPTION_LPCL_SEGMENTATION` | 0 = off, 1 = on | On: the camera runs an RGB-D segmentation neural network to refine the floor labels of the labeled point cloud. Off: labels use depth only. |
 
 These options cannot be changed while streaming. FW publishes them over USB only, not over GMSL.
 
@@ -152,16 +177,16 @@ The JSON has three groups. All keys are optional except `camera_position`, which
 | --- | --- | --- | --- | --- | --- |
 | `enable_ray_casting` | bool | - | true | - | Enable ray casting |
 | `ray_casting_threshold` | integer | - | 50 | 0 - 100 | Cell value that stops a visibility ray |
-| `enable_cliffs` | bool | - | false | - | Enable cliff detection |
-| `cliffs_threshold` | integer | points | 3 | 1 - 20 | Number of points needed to mark a cell as a cliff |
-| `cliffs_max_range` | float | m | 2.5 | 0.0 - 10.0 | Maximum distance from the camera at which cliffs are detected. 0 = no limit. |
-| `cliffs_min_drop` | float | m | 0.05 | 0.0 - 0.5 | Minimum depth below the floor for a point to count as a cliff. Points closer to the floor are treated as ground noise. |
+| `enable_cliffs` | bool | - | false | - | Enable cliff handling |
+| `cliffs_threshold` | integer | points | 3 | 0 - 20 | Number of points needed to mark a cell as a cliff |
+| `cliffs_max_range` | float | m | 2.5 | 0.0 - 10.0 | Maximum distance from the camera at which cliffs are calculated. 0 = no limit. |
+| `cliffs_min_drop` | float | m | 0.05 | 0.0 - 0.5 | Minimum depth below the floor at which a point counts as a cliff candidate. Points closer to the floor are treated as ground noise. |
 | `segmentation_merge_height` | float | m | 0.1 | 0.05 - 1.0 | Merge threshold between the depth based and the segmentation based floor height |
-| `surface_height_slope` | float | m/m | 0.0 | 0.0 - 0.1 | How much the floor band widens per meter of distance from the camera |
+| `surface_height_slope` | float | m/m | 0.0 | 0.0 - 0.1 | How much the floor band widens per meter of distance from the camera to the point |
 | `surface_height_slope_start` | float | m | 1.0 | 0.0 - 10.0 | Distance from the camera where the floor band starts to widen |
 | `surface_height_max` | float | m | 0.1 | 0.05 - 1.0 | Maximum height of the floor band |
 
-Floats are checked as float32, the type stored in flash. NaN and infinite values are always rejected.
+A bool can be written as `true` / `false` or `1` / `0`. Floats are checked as float32, the type stored in flash. NaN and infinite values are always rejected.
 
 #### Errors
 
