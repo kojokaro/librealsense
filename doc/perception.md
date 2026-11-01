@@ -122,7 +122,7 @@ The JSON has three groups. All keys are optional except `camera_position`, which
         "cliffs_threshold": 3,
         "cliffs_max_range": 2.5,
         "cliffs_min_drop": 0.05,
-        "segmentation_range_height": 0.1,
+        "segmentation_merge_height": 0.1,
         "surface_height_slope": 0.0,
         "surface_height_slope_start": 1.0,
         "surface_height_max": 0.1
@@ -130,12 +130,12 @@ The JSON has three groups. All keys are optional except `camera_position`, which
 }
 ```
 
-**`camera_position`** - where the camera is mounted, relative to the robot. Mandatory on the first write.
+**`camera_position`** - the camera pose in the robot frame. A point `p_cam` in camera coordinates is `p_robot = rotation · p_cam + translation` in robot coordinates. Mandatory on the first write.
 
 | Key | Type | Units | Range | Description |
 | --- | --- | --- | --- | --- |
-| `rotation` | float, 3x3 | - | any finite value | Rotation from the camera to the robot |
-| `translation` | float, [3] | m | any finite value | Camera position relative to the robot. The Z value is the mounting height and is used to calculate the cell threshold. |
+| `rotation` | float, 3x3 | - | any finite value | Rotation from the camera frame to the robot frame |
+| `translation` | float, [3] | m | any finite value | Camera position in the robot frame. The Z value is the mounting height and is used to calculate the cell threshold. |
 
 **`occupancy_grid_params`**
 
@@ -156,7 +156,7 @@ The JSON has three groups. All keys are optional except `camera_position`, which
 | `cliffs_threshold` | integer | points | 3 | 1 - 20 | Number of points needed to mark a cell as a cliff |
 | `cliffs_max_range` | float | m | 2.5 | 0.0 - 10.0 | Maximum distance from the camera at which cliffs are detected. 0 = no limit. |
 | `cliffs_min_drop` | float | m | 0.05 | 0.0 - 0.5 | Minimum depth below the floor for a point to count as a cliff. Points closer to the floor are treated as ground noise. |
-| `segmentation_range_height` | float | m | 0.1 | 0.05 - 1.0 | Merge threshold between the depth based and the segmentation based floor height |
+| `segmentation_merge_height` | float | m | 0.1 | 0.05 - 1.0 | Merge threshold between the depth based and the segmentation based floor height |
 | `surface_height_slope` | float | m/m | 0.0 | 0.0 - 0.1 | How much the floor band widens per meter of distance from the camera |
 | `surface_height_slope_start` | float | m | 1.0 | 0.0 - 10.0 | Distance from the camera where the floor band starts to widen |
 | `surface_height_max` | float | m | 0.1 | 0.05 - 1.0 | Maximum height of the floor band |
