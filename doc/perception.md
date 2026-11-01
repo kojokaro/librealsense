@@ -95,7 +95,7 @@ depth_mapping_sensor.set_depth_mapping_params('{"occupancy_grid_params": {"surfa
 * **Before the first write**, `get_depth_mapping_params()` returns the defaults and leaves out `camera_position`. To check whether a camera was configured, check whether `camera_position` is in the reply.
 * **Synchronous.** `set_depth_mapping_params()` returns after the camera has validated the JSON and written it to flash (about 25 ms), and throws if the camera rejected it. A rejected JSON writes nothing.
 * **Size limit.** The JSON must be 1 to 1016 bytes. Remove whitespace before sending, e.g. `json.dumps(params, separators=(",", ":"))` in Python.
-* **Hardware reset** the camera after writing new params, so it starts with them.
+* **Hardware reset** the camera after writing new params (`dev.hardware_reset()`), so it starts with them.
 
 #### Parameters
 
