@@ -472,6 +472,16 @@ namespace librealsense
                                                               ds::d500_mapping_xu_id::LPCL_SEGMENTATION,
                                                               "LPCL_Segmentation: Off = depth-only labeling, On = segmentation labels in the labeled point cloud",
                                                               false /* not settable while streaming */ ) );
+
+        // Switches while streaming, like the safety sensor's preset; set returns once the preset is active
+        if( is_xu_published( raw_mapping_sensor, ds::mapping_xu, ds::d500_mapping_xu_id::PRESET_ACTIVE_INDEX,
+                             sizeof( uint16_t ), RS2_OPTION_PRESET_ACTIVE_INDEX ) )
+            occupancy_ep->register_option( RS2_OPTION_PRESET_ACTIVE_INDEX,
+                std::make_shared< ensure_set_xu_option< uint16_t > >( raw_mapping_sensor,
+                                                                      ds::mapping_xu,
+                                                                      ds::d500_mapping_xu_id::PRESET_ACTIVE_INDEX,
+                                                                      "Preset Active Index: the preset used for the occupancy grid and labeled point cloud masks",
+                                                                      std::chrono::milliseconds( 1000 ) ) );
     }
 
     void d500_depth_mapping::register_metadata(std::shared_ptr<uvc_sensor> raw_mapping_ep)

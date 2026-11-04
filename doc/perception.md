@@ -86,6 +86,10 @@ The other values of `rs2_point_cloud_label` are not used by D5x5 cameras.
 
 These options cannot be changed while streaming. FW publishes them over USB only, not over GMSL.
 
+| Option | Values | Description |
+| --- | --- | --- |
+| `RS2_OPTION_PRESET_ACTIVE_INDEX` | 0 - 63 (range from FW) | Selects the preset whose zones and masks the occupancy grid and labeled point cloud use - the same preset table as the safety camera. Can be changed while streaming; `set_option` returns once the preset is active. Supported only when FW publishes the control; until then preset #0 is used. |
+
 ### Depth mapping params
 
 The depth mapping params set how the occupancy grid and labeled point cloud are calculated, such as where the camera is mounted, the grid cell size and the height of the floor band. The camera keeps them in flash, so they survive a reboot.
